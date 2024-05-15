@@ -6,12 +6,12 @@
 #include <ctype.h>
 
  enum obtiznosti {
-    ZADNA,
-    LEHKA,
+    LEHKA = 1,
     STREDNI,
     TEZKA
 };
 enum obtiznosti obtiznost;
+char dialogy[][6] = {"__000", "__100", "__200"};
 bool hracZemrel;
 bool debugMode = 0;
 bool splneneUkoly[9] = {};
@@ -102,6 +102,32 @@ int kontrolaSplneniVsechUkolu() {
     if (vsechnyUkolySplneny)
         return 1;
     return 0;
+}
+void vykresleniGrafiky(FILE *fptr, int cisloDialog, char bypassDialog[]) {
+    char ctenyRadek[255];
+    if (bypassDialog[0] != '\0') {
+        while (fgets(ctenyRadek, sizeof(ctenyRadek), fptr) != NULL) {
+            ctenyRadek[strcspn(ctenyRadek, "\n")] = '\0';
+            if (strcmp(ctenyRadek, bypassDialog) == 0)
+                break;
+        }
+        fseek(fptr, 0, SEEK_SET);
+    }
+    if (cisloDialog != -1) {
+        if (debugMode)
+            printf("Debug: Looking for: %s\n", dialogy[cisloDialog]);
+        while (fgets(ctenyRadek,sizeof(ctenyRadek),fptr) != NULL){
+            ctenyRadek[strcspn(ctenyRadek, "\n")] = '\0';
+            if (strcmp(ctenyRadek, dialogy[cisloDialog]) == 0)
+                break;
+        }
+        while (fgets(ctenyRadek,sizeof(ctenyRadek),fptr) != NULL){
+            ctenyRadek[strcspn(ctenyRadek, "\n")] = '\0';
+            if (strcmp(ctenyRadek, "__") == 0)
+                break;
+            printf("%s\n",ctenyRadek);
+        }
+    }
 }
 void kouzelnaBrana() {
     float MAX_CAS;
@@ -209,8 +235,16 @@ void poustniCyklony() {
     int hadanySmer[DELKA_CESTY];
     int danySmer[DELKA_CESTY];
     int cisloPokusu = 0;
-    for (int i = 0; i < DELKA_CESTY; i++) // Přiřazení čísel 0-2 do array, který bude tvořit řešení pro východ z bludiště.
+    // Přiřazení čísel 0-2 do array, který bude tvořit řešení pro východ z bludiště.
+    for (int i = 0; i < DELKA_CESTY; i++){
         danySmer[i] = rand()%3;
+        if (debugMode && i == 0)
+            printf("Debug: %d", danySmer[i]);
+        if (debugMode && i != 0)
+            printf("%d", danySmer[i]);
+    }
+    if (debugMode)
+        printf("\n");
     printf("Otevres 3. stranu kodexu a vidis, ze musis projit poustni cyklony.\n");
     printf("Vydas se na cestu k nim, je to dlouha cesta. Jsou totiz az v pousti.\n");
     printf("Myslis si, ze uz tam nedojdes, kdyz v tom, se pred tebou objevi obrovske cyklony\n");
@@ -284,7 +318,24 @@ void hlubokyLes() {
 
 }
 void strazceDveri() {
-
+    char *filename = "imgs.txt";
+    int cisloDialog = -1;
+    char bypassDialog[] = {};
+    FILE *fptr = NULL;
+    if((fptr = fopen(filename,"r")) == NULL)
+    {
+        fprintf(stderr,"error opening %s\n",filename);
+        system("pause");
+        exit(1);
+    }
+    if (debugMode){
+        do {
+            scanf("%s", bypassDialog);
+        } while (strcmp(bypassDialog, "\0") != 0);
+    }
+    vykresleniGrafiky(fptr, cisloDialog, bypassDialog);
+    system("pause");
+    fclose(fptr);
 }
 void magickeKruhy() {
 
@@ -295,11 +346,12 @@ void duchStarovekehoKodera() {
 void labyrintRekursivniMagie() {
 
 }
-
 int main(int argc, char *argv[]) {
-    if (argc == 2){
-        if(strcmp(argv[1], "-debug") == 0)
-            debugMode = 1;
+    if (argc >= 2){
+        for (int i = 0; i < argc; i++){
+            if (strcmp(argv[i], "-debug") == 0)
+                debugMode = 1;
+        }
     }
     if(debugMode)
         printf("===================================DEBUG===================================\n");
@@ -317,7 +369,7 @@ int main(int argc, char *argv[]) {
             scanf("%d", &obtiznost);
             system("cls");
         } while (obtiznost < 1 || obtiznost > 3);
-        while (!kontrolaSplneniVsechUkolu() || hracZemrel) {
+        while (!kontrolaSplneniVsechUkolu() && !hracZemrel) {
             do {
                 volba = vyberoveMenu();
                 volba --;
